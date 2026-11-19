@@ -1,0 +1,26 @@
+services:
+  audit-log:
+    build: .
+    ports:
+      - "127.0.0.1:8000:8000"
+    environment:
+      AUDIT_TOKEN: ${AUDIT_TOKEN:-}
+    volumes:
+      - log-data:/app/data
+      - signing-keys:/app/keys:ro
+    cap_drop: [ALL]
+    security_opt: [no-new-privileges:true]
+    healthcheck:
+      test: [CMD, python, -c, "from urllib.request import urlopen; urlopen('http://127.0.0.1:8000/api/v1/sth', timeout=3).close()"]
+      interval: 30s
+      timeout: 5s
+      retries: 3
+  provision-key:
+    build: .
+    profiles: ["tools"]
+    command: [audit-log, init-key, /app/keys/signing.key]
+    volumes:
+      - signing-keys:/app/keys
+volumes:
+  log-data:
+  signing-keys:
